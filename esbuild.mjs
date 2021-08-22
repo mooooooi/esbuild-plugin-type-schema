@@ -13,6 +13,7 @@ esbuild.buildSync({
     bundle: true,
     platform: "node",
     external,
+    sourcemap: true
 });
 
 esbuild.buildSync({
@@ -22,4 +23,5 @@ esbuild.buildSync({
     bundle: true,
     platform: "node",
     external,
+    sourcemap: true
 });

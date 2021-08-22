@@ -1,6 +1,6 @@
 {
   "name": "esbuild-plugin-type-schema",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "It convert decorator tagged in build-time to anything you want!",
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",

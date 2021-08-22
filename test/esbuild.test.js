@@ -1,16 +1,10 @@
 const { build } = require("esbuild");
-const { TypeSchema } = require("../");
-
-class TestTypeSchema extends TypeSchema {
-    onProgress(clsInfo) {
-        
-    }
-}
+const { JSONTypeSchema } = require("../");
 
 build({
     entryPoints: ["test/index.ts"],
     outfile: "test/dist/bundle.js",
     format: "esm",
-    plugins: [new TestTypeSchema()],
+    plugins: [JSONTypeSchema("test/dist/type.json")],
     tsconfig: "./tsconfig.json",
 });

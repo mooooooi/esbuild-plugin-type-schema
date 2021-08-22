@@ -28,3 +28,25 @@ export interface ClassTypeInfo {
     properties: PropTypeInfo[];
     methods: MethodTypeInfo[];
 }
+
+export interface SimplePropTypeInfo {
+    name: string;
+    type: string;
+}
+
+export interface SimpleMethodTypeInfo {
+    name: string;
+    return: string;
+    params: string[];
+}
+
+export interface SimpleParamTypeInfo {
+    name: string;
+    type: string;
+}
+
+export interface SimpleClassTypeInfo {
+    name: string;
+    properties: SimplePropTypeInfo[];
+    methods: SimpleMethodTypeInfo[];
+}
