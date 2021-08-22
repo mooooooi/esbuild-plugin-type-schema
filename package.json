@@ -1,0 +1,30 @@
+{
+  "name": "esbuild-plugin-type-schema",
+  "version": "1.0.1",
+  "description": "It convert decorator tagged in build-time to anything you want!",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "repository": "github.com/mooooooi/esbuild-type-schema",
+  "author": "LittleMoi",
+  "license": "MIT",
+  "dependencies": {
+    "ts-morph": "^11.0.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.12.22",
+    "prettier": "^2.3.2",
+    "typescript": "^4.3.5"
+  },
+  "peerDependencies": {
+    "esbuild": ">=0.12.22"
+  },
+  "scripts": {
+    "build": "node esbuild.mjs && tsc --emitDeclarationOnly --outdir dist",
+    "test": "node test/esbuild.test.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}
