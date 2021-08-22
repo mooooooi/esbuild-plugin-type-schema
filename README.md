@@ -5,7 +5,8 @@
 [![License](https://img.shields.io/npm/l/esbuild-plugin-type-schema.svg)](https://github.com/mooooooi/esbuild-plugin-type-schema/blob/master/package.json)
 
 -   [Install](#installation)
--   [Commands](#commands)
+-   [Usage](#usage)
+-   [Result](#result)
 
 # Installation
 
