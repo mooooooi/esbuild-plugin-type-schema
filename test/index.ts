@@ -4,7 +4,7 @@ type u32 = number;
 
 @auto
 export class Abcf {
-    @auto
+    @prop("a-custom")
     a?: Abce;
 }
 
