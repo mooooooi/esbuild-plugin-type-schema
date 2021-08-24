@@ -17,6 +17,7 @@ interface TypeSchemaOption {
     onStart?(o: BuildOptions): void;
     onProgress(o: BuildOptions, classTypeInfo: ClassTypeInfo): void;
     onEnd?(o: BuildOptions, result: BuildResult): void;
+    decFileFilter?: RegExp;
 }
 
 export function TypeSchema(option: TypeSchemaOption): Plugin {
@@ -36,7 +37,7 @@ export function TypeSchema(option: TypeSchemaOption): Plugin {
 
             const project = new Project();
             const decNames = new Set<string>();
-            await getDecFiles(build, handingFiles, decFiles);
+            await getDecFiles(build, handingFiles, decFiles, option.decFileFilter);
 
             const decSourceFiles = project.addSourceFilesAtPaths(
                 Array.from(decFiles.values())
@@ -142,9 +143,9 @@ export function TypeSchema(option: TypeSchemaOption): Plugin {
 async function getDecFiles(
     build: PluginBuild,
     handingFiles: Set<string>,
-    decFiles: Set<string>
+    decFiles: Set<string>,
+    decFilter: RegExp = /\.dec/
 ) {
-    const decFilter = /.dec/;
     await esbuild({
         entryPoints: build.initialOptions.entryPoints,
         bundle: true,
