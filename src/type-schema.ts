@@ -6,12 +6,7 @@ import {
     BuildOptions,
 } from "esbuild";
 import { ForStatement, Project } from "ts-morph";
-import {
-    ClassTypeInfo,
-    MethodTypeInfo,
-    PropTypeInfo,
-} from "./type-info";
-
+import { ClassTypeInfo, MethodTypeInfo, PropTypeInfo } from "./type-info";
 
 interface TypeSchemaOption {
     onStart?(o: BuildOptions): void;
@@ -37,7 +32,12 @@ export function TypeSchema(option: TypeSchemaOption): Plugin {
 
             const project = new Project();
             const decNames = new Set<string>();
-            await getDecFiles(build, handingFiles, decFiles, option.decFileFilter);
+            await getDecFiles(
+                build,
+                handingFiles,
+                decFiles,
+                option.decFileFilter
+            );
 
             const decSourceFiles = project.addSourceFilesAtPaths(
                 Array.from(decFiles.values())
@@ -67,22 +67,22 @@ export function TypeSchema(option: TypeSchemaOption): Plugin {
 
                 var classes = sf.getClasses();
                 for (const cls of classes) {
-                    const decor = cls
+                    const clsDecors = cls
                         .getDecorators()
-                        .find((decor) => decNames.has(decor.getName()));
-                    if (!decor) continue;
+                        .filter((decor) => decNames.has(decor.getName()));
+                    if (!clsDecors) continue;
 
                     const props = cls.getProperties();
                     const propInfoArr: PropTypeInfo[] = [];
                     for (const prop of props) {
-                        const propDecor = prop
+                        const propDecors = prop
                             .getDecorators()
-                            .find((propDecor) =>
+                            .filter((propDecor) =>
                                 decNames.has(propDecor.getName())
                             );
-                        if (!propDecor) continue;
+                        if (propDecors.length <= 0) continue;
                         propInfoArr.push({
-                            decor: propDecor,
+                            decors: propDecors,
                             target: prop,
                         });
                     }
@@ -92,44 +92,36 @@ export function TypeSchema(option: TypeSchemaOption): Plugin {
                     for (const method of methods) {
                         const methodDecor = method
                             .getDecorators()
-                            .find((methodDecor) =>
+                            .filter((methodDecor) =>
                                 decNames.has(methodDecor.getName())
                             );
                         if (!methodDecor) continue;
 
                         methodInfoArr.push({
-                            decor: methodDecor,
+                            decors: methodDecor,
                             target: method,
                             params: method.getParameters().map((param) => {
-                                const paramDecor = param
+                                const paramDecors = param
                                     .getDecorators()
-                                    .find((paramDecor) =>
+                                    .filter((paramDecor) =>
                                         decNames.has(paramDecor.getName())
                                     );
                                 return {
                                     target: param,
-                                    decor: paramDecor,
+                                    decors: paramDecors,
                                 };
                             }),
                         });
                     }
 
                     const classTypeInfo: ClassTypeInfo = {
-                        decor,
+                        decors: clsDecors,
                         target: cls,
                         properties: propInfoArr,
                         methods: methodInfoArr,
                     };
 
                     option.onProgress(build.initialOptions, classTypeInfo);
-                    decor.remove();
-                    propInfoArr.forEach((info) => {
-                        info.decor.remove();
-                    });
-                    methodInfoArr.forEach((info) => {
-                        info.decor.remove();
-                        info.params.forEach((param) => param.decor?.remove());
-                    });
                 }
                 return {
                     contents: sf.getFullText(),
@@ -167,5 +159,3 @@ async function getDecFiles(
         write: false,
     });
 }
-
-

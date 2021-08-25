@@ -7,23 +7,23 @@ import {
 } from "ts-morph";
 
 export interface PropTypeInfo {
-    decor: Decorator;
+    decors: Decorator[];
     target: PropertyDeclaration;
 }
 
 export interface MethodTypeInfo {
-    decor: Decorator;
+    decors: Decorator[];
     target: MethodDeclaration;
     params: ParamTypeInfo[];
 }
 
 export interface ParamTypeInfo {
-    decor: Decorator;
+    decors: Decorator[];
     target: ParameterDeclaration;
 }
 
 export interface ClassTypeInfo {
-    decor: Decorator;
+    decors: Decorator[];
     target: ClassDeclaration;
     properties: PropTypeInfo[];
     methods: MethodTypeInfo[];
