@@ -5,8 +5,15 @@ import {
     BuildResult,
     BuildOptions,
 } from "esbuild";
-import { ForStatement, Project } from "ts-morph";
-import { ClassTypeInfo, MethodTypeInfo, PropTypeInfo } from "./type-info";
+import { Project } from "ts-morph";
+import {
+    AccessorTypeInfo,
+    ClassTypeInfo,
+    MethodTypeInfo,
+    PropTypeInfo,
+} from "./type-info";
+import * as path from "path";
+import * as fs from "fs";
 
 interface TypeSchemaOption {
     onStart?(o: BuildOptions): void;
@@ -30,7 +37,18 @@ export function TypeSchema(option: TypeSchemaOption): Plugin {
                     );
             }
 
-            const project = new Project();
+            const tsconfigPath = path.join(process.cwd(), "tsconfig.json");
+            if (!fs.existsSync(tsconfigPath)) {
+                throw "Cannot find tsconfig in path: " + tsconfigPath;
+            }
+            console.log("Finding tsconfig's path is " + tsconfigPath);
+            const project = new Project({
+                compilerOptions: {
+                    declaration: false,
+                    sourceMap: false,
+                },
+                tsConfigFilePath: tsconfigPath,
+            });
             const decNames = new Set<string>();
             await getDecFiles(
                 build,
@@ -39,7 +57,7 @@ export function TypeSchema(option: TypeSchemaOption): Plugin {
                 option.decFileFilter
             );
 
-            const decSourceFiles = project.addSourceFilesAtPaths(
+            const decSourceFiles = project.getSourceFiles(
                 Array.from(decFiles.values())
             );
 
@@ -47,86 +65,116 @@ export function TypeSchema(option: TypeSchemaOption): Plugin {
                 [...sf.getVariableDeclarations(), ...sf.getFunctions()].forEach(
                     (clr) => {
                         if (
-                            !(
-                                clr.isExported ||
-                                clr.isNamedExport ||
-                                clr.isDefaultExport
-                            )
-                        )
-                            return;
-
-                        decNames.add(clr.getName()!);
+                            clr.isExported ||
+                            clr.isNamedExport ||
+                            clr.isDefaultExport
+                        ) {
+                            decNames.add(clr.getName());
+                        }
+                        clr.forget();
                     }
                 );
             }
-
             console.log(decNames);
 
             build.onLoad({ filter: /.+\.ts/ }, (args) => {
-                const sf = project.addSourceFileAtPath(args.path);
+                if (handingFiles.has(args.path)) {
+                    return project.forgetNodesCreatedInBlock((remember) => {
+                        const sf = project.getSourceFileOrThrow(args.path);
+                        var classes = sf.getClasses();
+                        for (const cls of classes) {
+                            console.log(cls.getName());
+                            const clsDecors = cls
+                                .getDecorators()
+                                .filter((decor) =>
+                                    decNames.has(decor.getName())
+                                );
+                            if (clsDecors.length <= 0) continue;
 
-                var classes = sf.getClasses();
-                for (const cls of classes) {
-                    const clsDecors = cls
-                        .getDecorators()
-                        .filter((decor) => decNames.has(decor.getName()));
-                    if (!clsDecors) continue;
-
-                    const props = cls.getProperties();
-                    const propInfoArr: PropTypeInfo[] = [];
-                    for (const prop of props) {
-                        const propDecors = prop
-                            .getDecorators()
-                            .filter((propDecor) =>
-                                decNames.has(propDecor.getName())
-                            );
-                        if (propDecors.length <= 0) continue;
-                        propInfoArr.push({
-                            decors: propDecors,
-                            target: prop,
-                        });
-                    }
-
-                    const methods = cls.getMethods();
-                    const methodInfoArr: MethodTypeInfo[] = [];
-                    for (const method of methods) {
-                        const methodDecor = method
-                            .getDecorators()
-                            .filter((methodDecor) =>
-                                decNames.has(methodDecor.getName())
-                            );
-                        if (!methodDecor) continue;
-
-                        methodInfoArr.push({
-                            decors: methodDecor,
-                            target: method,
-                            params: method.getParameters().map((param) => {
-                                const paramDecors = param
+                            const props = cls.getProperties();
+                            const propInfoArr: PropTypeInfo[] = [];
+                            for (const prop of props) {
+                                const propDecors = prop
                                     .getDecorators()
-                                    .filter((paramDecor) =>
-                                        decNames.has(paramDecor.getName())
+                                    .filter((propDecor) =>
+                                        decNames.has(propDecor.getName())
                                     );
-                                return {
-                                    target: param,
-                                    decors: paramDecors,
-                                };
-                            }),
-                        });
-                    }
+                                if (propDecors.length <= 0) continue;
+                                propInfoArr.push({
+                                    decors: propDecors,
+                                    target: prop,
+                                });
+                            }
 
-                    const classTypeInfo: ClassTypeInfo = {
-                        decors: clsDecors,
-                        target: cls,
-                        properties: propInfoArr,
-                        methods: methodInfoArr,
-                    };
+                            const methods = cls.getMethods();
+                            const methodInfoArr: MethodTypeInfo[] = [];
+                            for (const method of methods) {
+                                const methodDecors = method
+                                    .getDecorators()
+                                    .filter((methodDecor) =>
+                                        decNames.has(methodDecor.getName())
+                                    );
+                                if (methodDecors.length <= 0) continue;
 
-                    option.onProgress(build.initialOptions, classTypeInfo);
+                                methodInfoArr.push({
+                                    decors: methodDecors,
+                                    target: method,
+                                    params: method
+                                        .getParameters()
+                                        .map((param) => {
+                                            const paramDecors = param
+                                                .getDecorators()
+                                                .filter((paramDecor) =>
+                                                    decNames.has(
+                                                        paramDecor.getName()
+                                                    )
+                                                );
+                                            return {
+                                                target: param,
+                                                decors: paramDecors,
+                                            };
+                                        }),
+                                });
+                            }
+
+                            const accessores = [
+                                ...cls.getGetAccessors(),
+                                ...cls.getSetAccessors(),
+                            ];
+                            const accessorInfoArr: AccessorTypeInfo[] = [];
+                            for (const accessor of accessores) {
+                                const decors = accessor
+                                    .getDecorators()
+                                    .filter((dec) =>
+                                        decNames.has(dec.getName())
+                                    );
+                                if (decors.length <= 0) continue;
+                                accessorInfoArr.push({
+                                    decors,
+                                    target: accessor,
+                                });
+                            }
+
+                            const classTypeInfo: ClassTypeInfo = {
+                                decors: clsDecors,
+                                target: cls,
+                                properties: propInfoArr,
+                                methods: methodInfoArr,
+                                accessores: accessorInfoArr,
+                            };
+                            option.onProgress(
+                                build.initialOptions,
+                                classTypeInfo
+                            );
+                        }
+                        return {
+                            contents: sf.getFullText(),
+                            loader: "ts",
+                        };
+                    });
+                } else {
+                    return undefined;
                 }
-                return {
-                    contents: sf.getFullText(),
-                    loader: "ts",
-                };
             });
         },
     };

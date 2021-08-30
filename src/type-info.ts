@@ -1,4 +1,5 @@
 import {
+    AccessorDeclaration,
     ClassDeclaration,
     Decorator,
     MethodDeclaration,
@@ -9,6 +10,11 @@ import {
 export interface PropTypeInfo {
     decors: Decorator[];
     target: PropertyDeclaration;
+}
+
+export interface AccessorTypeInfo {
+    decors: Decorator[];
+    target: AccessorDeclaration;
 }
 
 export interface MethodTypeInfo {
@@ -27,6 +33,7 @@ export interface ClassTypeInfo {
     target: ClassDeclaration;
     properties: PropTypeInfo[];
     methods: MethodTypeInfo[];
+    accessores: AccessorTypeInfo[];
 }
 
 export interface SimplePropTypeInfo {
