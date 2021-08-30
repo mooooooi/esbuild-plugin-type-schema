@@ -83,7 +83,6 @@ export function TypeSchema(option: TypeSchemaOption): Plugin {
                         const sf = project.getSourceFileOrThrow(args.path);
                         var classes = sf.getClasses();
                         for (const cls of classes) {
-                            console.log(cls.getName());
                             const clsDecors = cls
                                 .getDecorators()
                                 .filter((decor) =>
